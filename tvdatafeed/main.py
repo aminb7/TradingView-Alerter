@@ -88,9 +88,15 @@ class TradingViewManager:
 
     def show_trading_view(self):
         while True:
-            self.update_currency_hists()
-            self.currencies = sorted(self.currencies, key=lambda x: x.lastCandleChanges, reverse=True)
-            self.show_currency_pannels()
+            try:
+                self.update_currency_hists()
+                self.currencies = sorted(self.currencies, key=lambda x: x.lastCandleChanges, reverse=True)
+                self.show_currency_pannels()
+            except KeyboardInterrupt:
+                print("KeyboardInterrupt exception is caught")
+                exit()
+            except:
+                print("Connetion Failed", end='\r')
 
 def main():
     symbols = ["GTOUSDT", "KEYUSDT", "MATICBTC", "MITHUSDT",
