@@ -27,7 +27,7 @@ class Alerter:
         self.sender_pass = sender_pass
         self.receiver_address = receiver_address
     
-    def alert(self, subject):
+    def email(self, subject):
         message = MIMEMultipart()
         message['From'] = self.sender_address
         message['To'] = self.receiver_address
@@ -39,6 +39,13 @@ class Alerter:
         text = message.as_string()
         session.sendmail(self.sender_address, self.receiver_address, text)
         session.quit()
+
+    def beep(self, sound):
+        beep_command = "if [ \"$1\" = --list ];     then         find \
+            /usr/share/sounds -type f -exec basename {} \; | sort -n \
+            | tr '\n' ' '; echo;     else         \paplay \
+            $(find /usr/share/sounds -type f -iname \"" + sound + "*\" | head -1);     fi"
+        os.system(beep_command)
 
 class TradingViewManager:
     def __init__(self, currencies, exchange, candle_interval, alerter):
@@ -56,7 +63,7 @@ class TradingViewManager:
             currency.lastCandleChanges = (currency.hist.iloc[-2, :].at["close"] - currency.hist.iloc[-2, :].at["open"]) / currency.hist.iloc[-2, :].at["open"]
 
     def must_alert(self, currency):
-        return currency.currentCandleChanges * 100 > 1.0 or currency.lastCandleChanges * 100 > 1.0
+        return currency.currentCandleChanges * 100 > 0.7 or currency.lastCandleChanges * 100 > 0.7
 
     def show_currency_pannels(self):
         columns = ["Date", "Symbol", "Last Candle Changes",
@@ -72,8 +79,9 @@ class TradingViewManager:
             last_changes_str = str(last_changes) + " %"
             
             if self.must_alert(currency):
-                message = currency.symbol + " " + curr_changes_str
-                self.alerter.alert(message)
+                message = currency.symbol + " " + last_changes_str + " " + curr_changes_str
+                self.alerter.email(message)
+                self.alerter.beep("Slick")
 
             row = [currency.hist.iloc[-1, :].name,
                     currency.symbol,
@@ -103,8 +111,8 @@ def main():
                 "CHRUSDT", "NEARUSD", "DYDXUSDT", "CELRUSDT",
                 # "XTZUSDT", "TLMUSDT", "SUSHIUSDT", "STORJUSDT",
                 # "WINUSDT", "SANDBTC", "SHIBUSDT", "ONEUSDT",
-                # "TROYUSDT", "MANAUSDT", "BATUSDT", "GRTUSDT",
-                "LRCUSDT", "SFPUSDT", "BTTUSDT"]
+                # "MANAUSDT", "BATUSDT", "GRTUSDT",
+                "LRCUSDT", "SFPUSDT", "BTTUSDT", "TROYUSDT"]
     currencies = create_currencies(symbols)
     exchange = "BINANCE"
     candle_interval = Interval.in_1_minute
